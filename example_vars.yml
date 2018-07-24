@@ -1,0 +1,14 @@
+---
+ansible_become_pass: sudo_pass
+
+# nvidia
+nvidia_installer: files/NVIDIA-Linux-x86_64-390.77.run
+#apt_nvidia_driver: nvidia-driver-390
+
+# cuda
+cuda_repo_url: http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_9.2.148-1_amd64.deb
+cuda_apt_key_url: http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
+
+cudnn_tgz:
+  - files/cudnn-9.2-linux-x64-v7.1.tgz
+  - files/cudnn-9.0-linux-x64-v7.1.tgz

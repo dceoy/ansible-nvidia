@@ -1,0 +1,142 @@
+---
+- name: Download cuda repo rpm or deb
+  when: cuda_repo_url is defined
+  environment:
+    https_proxy: "{{ http_proxy if http_proxy is defined else '' }}"
+  get_url:
+    url: "{{ cuda_repo_url }}"
+    dest: "/tmp/{{ cuda_repo_url|basename }}"
+  notify: Notify updates of CUDA via Slack
+
+- name: Install CUDA repo in Fedora
+  when:
+    - cuda_repo_url is defined
+    - ansible_distribution == 'Fedora'
+  become: true
+  dnf:
+    name: "/tmp/{{ cuda_repo_url|basename }}"
+    state: present
+  notify: Notify updates of CUDA via Slack
+
+- name: Install CUDA repo in RedHat
+  when:
+    - cuda_repo_url is defined
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution != 'Fedora'
+  become: true
+  yum:
+    name: "/tmp/{{ cuda_repo_url|basename }}"
+    state: present
+  notify: Notify updates of CUDA via Slack
+
+- name: Clean dnf or yum
+  when:
+    - cuda_repo_url is defined
+    - ansible_os_family == 'RedHat'
+  become: true
+  shell: |
+    {{ 'dnf' if ansible_distribution == 'Fedora' else 'yum' }} clean all
+
+- name: Install CUDA repo in Debian
+  when:
+    - cuda_repo_url is defined
+    - ansible_os_family == 'Debian'
+  become: true
+  apt:
+    deb: "/tmp/{{ cuda_repo_url|basename }}"
+  notify: Notify updates of CUDA via Slack
+
+- name: Add the GPG key for CUDA in Debian
+  when:
+    - cuda_apt_key_url is defined
+    - ansible_os_family == 'Debian'
+  become: true
+  environment:
+    https_proxy: "{{ http_proxy if http_proxy is defined else '' }}"
+  apt_key:
+    url: "{{ cuda_apt_key_url }}"
+    state: present
+  notify: Notify updates of CUDA via Slack
+
+- name: Install CUDA in Fedora
+  when: ansible_distribution == 'Fedora'
+  become: true
+  dnf:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - cuda
+    - cuda-9-0
+  register: dnf_cuda
+  ignore_errors: true
+  notify: Notify updates of CUDA via Slack
+
+- name: Install CUDA in RedHat
+  when:
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution != 'Fedora'
+  become: true
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - cuda
+    - cuda-9-0
+  register: yum_cuda
+  ignore_errors: true
+  notify: Notify updates of CUDA via Slack
+
+- name: Install CUDA in Debian
+  when: ansible_os_family == 'Debian'
+  become: true
+  apt:
+    autoclean: yes
+    autoremove: yes
+    update_cache: yes
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - cuda
+    - cuda-9-0
+  register: apt_cuda
+  ignore_errors: true
+  notify: Notify updates of CUDA via Slack
+
+- name: Put /etc/profile.d/cuda.sh
+  become: true
+  copy:
+    src: cuda.sh
+    dest: /etc/profile.d/cuda.sh
+  notify: Notify updates of CUDA via Slack
+
+- name: Create temporary directory to install cuDNN
+  when:
+    - cudnn_tgz is defined
+    - apt_cuda is changed or dnf_cuda is changed or yum_cuda is changed
+  file:
+    path: "/tmp/{{ item|basename }}.unarchived"
+    state: directory
+  with_items: "{{ cudnn_tgz }}"
+
+- name: Extract tgz files of cuDNN
+  when:
+    - cudnn_tgz is defined
+    - apt_cuda is changed or dnf_cuda is changed or yum_cuda is changed
+  unarchive:
+    src: "{{ item }}"
+    dest: "/tmp/{{ item|basename }}.unarchived"
+  with_items: "{{ cudnn_tgz }}"
+
+- name: Install cuDNN
+  when:
+    - cudnn_tgz is defined
+    - apt_cuda is changed or dnf_cuda is changed or yum_cuda is changed
+  become: true
+  vars:
+    cudnn_dir: "/tmp/{{ item|basename }}.unarchived"
+    cuda_dir: "{{ item|basename|regex_replace('^cudnn-([0-9]+\\.[0-9]+)-.*$','/usr/local/cuda-\\1') }}"
+  shell: |
+    cp -a {{ cudnn_dir }}/cuda/include/* {{ cuda_dir }}/targets/x86_64-linux/include/
+    cp -a {{ cudnn_dir }}/cuda/lib64/* {{ cuda_dir }}/targets/x86_64-linux/lib/
+  with_items: "{{ cudnn_tgz }}"
+  notify: Notify updates of CUDA via Slack

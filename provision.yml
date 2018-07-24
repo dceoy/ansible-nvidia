@@ -1,0 +1,11 @@
+---
+- name: Set up NVIDIA and CUDA drivers
+  hosts:
+    - gpu
+  environment:
+    http_proxy: "{{ http_proxy if http_proxy is defined else '' }}"
+    https_proxy: "{{ https_proxy if https_proxy is defined else '' }}"
+    no_proxy: "{{ no_proxy if no_proxy is defined else '' }}"
+  roles:
+    - role: nvidia
+    - role: cuda

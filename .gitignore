@@ -1,0 +1,7 @@
+*.retry
+.python-version
+hosts
+ansible.cfg
+group_vars/*
+files/*
+!.gitkeep
