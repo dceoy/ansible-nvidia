@@ -62,11 +62,8 @@
   when: ansible_distribution == 'Fedora'
   become: true
   dnf:
-    name: "{{ item }}"
+    name: cuda
     state: latest
-  with_items:
-    - cuda
-    - cuda-9-0
   register: dnf_cuda
   ignore_errors: true
   notify: Notify updates of CUDA via Slack
@@ -77,11 +74,8 @@
     - ansible_distribution != 'Fedora'
   become: true
   yum:
-    name: "{{ item }}"
+    name: cuda
     state: latest
-  with_items:
-    - cuda
-    - cuda-9-0
   register: yum_cuda
   ignore_errors: true
   notify: Notify updates of CUDA via Slack
@@ -93,11 +87,8 @@
     autoclean: yes
     autoremove: yes
     update_cache: yes
-    name: "{{ item }}"
+    name: cuda
     state: latest
-  with_items:
-    - cuda
-    - cuda-9-0
   register: apt_cuda
   ignore_errors: true
   notify: Notify updates of CUDA via Slack
