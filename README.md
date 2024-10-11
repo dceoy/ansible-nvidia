@@ -3,6 +3,8 @@ ansible-nvidia
 
 Ansible playbooks for Ubuntu servers with NVIDIA GPUs
 
+[![CI](https://github.com/dceoy/ansible-nvidia/actions/workflows/ci.yml/badge.svg)](https://github.com/dceoy/ansible-nvidia/actions/workflows/ci.yml)
+
 Setup
 -----
 

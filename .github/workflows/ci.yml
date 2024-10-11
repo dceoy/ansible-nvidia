@@ -1,0 +1,13 @@
+---
+name: CI/CD
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+jobs:
+  yaml-lint:
+    uses: dceoy/gh-actions-for-devops/.github/workflows/yaml-lint.yml@main
