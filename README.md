@@ -1,7 +1,7 @@
 ansible-nvidia
 ==============
 
-Ansible playbook for NVIDIA driver and CUDA
+Ansible playbooks for Ubuntu servers with NVIDIA GPUs
 
 Setup
 -----
@@ -18,9 +18,7 @@ $ vim group_vars/gpu.yml    # => edit
 Usage
 -----
 
-1.  Put installers for NVIDIA driver, CUDA, and cuDNN in `files/`.
-
-2.  Install them using the playbook.
+1.  Install them using the playbook.
 
     ```sh
     $ ansible-playbook provison.yml

@@ -1,0 +1,36 @@
+---
+- name: Install required packages
+  become: true
+  apt:
+    autoclean: yes
+    autoremove: yes
+    update_cache: yes
+    name:
+      - apt-transport-https
+      - ca-certificates
+    state: latest
+
+- name: Upgrade packages
+  become: true
+  apt:
+    autoclean: yes
+    autoremove: yes
+    upgrade: dist
+    update_cache: yes
+
+- name: Check NVIDIA driver
+  shell: |
+    nvidia-smi
+  ignore_errors: true
+  register: nvidia_smi
+  changed_when: false
+
+- name: Install Ubuntu drivers
+  when:
+    - nvidia_smi is failed
+  become: true
+  command: |
+    ubuntu-drivers autoinstall
+  register: ubuntu_drivers_install
+  changed_when:
+    - "'All the available drivers are already installed.' not in ubuntu_drivers_install.stdout"

@@ -7,5 +7,9 @@
     https_proxy: "{{ https_proxy if https_proxy is defined else '' }}"
     no_proxy: "{{ no_proxy if no_proxy is defined else '' }}"
   roles:
-    - role: nvidia
+    - role: driver
+      when:
+        - ansible_os_family == 'Debian'
     - role: cuda
+      when:
+        - ansible_os_family == 'Debian'

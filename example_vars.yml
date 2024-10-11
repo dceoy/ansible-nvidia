@@ -1,13 +1,2 @@
 ---
 ansible_become_pass: sudo_pass
-
-# nvidia
-nvidia_installer: files/NVIDIA-Linux-x86_64-340.107.run
-# apt_nvidia_driver: nvidia-340
-
-# cuda
-cuda_repo_url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.0.130-1_amd64.deb
-cuda_apt_key_url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
-
-cudnn_tgz:
-  - files/cudnn-10.0-linux-x64-v7.3.1.20.tgz
