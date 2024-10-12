@@ -1,7 +1,7 @@
 ---
 - name: Install required packages
   become: true
-  apt:
+  ansible.builtin.apt:
     autoclean: yes
     autoremove: yes
     update_cache: yes
@@ -12,15 +12,15 @@
 
 - name: Upgrade packages
   become: true
-  apt:
+  ansible.builtin.apt:
     autoclean: yes
     autoremove: yes
     upgrade: dist
     update_cache: yes
 
 - name: Check NVIDIA driver
-  shell: |
-    nvidia-smi
+  ansible.builtin.command:
+    cmd: nvidia-smi
   ignore_errors: true
   register: nvidia_smi
   changed_when: false
@@ -29,8 +29,8 @@
   when:
     - nvidia_smi is failed
   become: true
-  command: |
-    ubuntu-drivers autoinstall
+  ansible.builtin.command:
+    cmd: ubuntu-drivers autoinstall
   register: ubuntu_drivers_install
   changed_when:
     - "'All the available drivers are already installed.' not in ubuntu_drivers_install.stdout"
