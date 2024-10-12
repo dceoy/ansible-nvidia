@@ -1,0 +1,67 @@
+---
+- name: Set proxy at /etc/environment
+  when: http_proxy is defined or https_proxy is defined
+  become: true
+  ansible.builtin.blockinfile:
+    create: yes
+    dest: /etc/environment
+    state: present
+    block: |
+      HTTP_PROXY={{ http_proxy }}
+      HTTPS_PROXY={{ https_proxy }}
+      NO_PROXY={{ no_proxy }}
+      http_proxy={{ http_proxy }}
+      https_proxy={{ https_proxy }}
+      no_proxy={{ no_proxy }}
+
+- name: Set proxy at /etc/apt/apt.conf
+  when: http_proxy is defined or https_proxy is defined
+  become: true
+  ansible.builtin.blockinfile:
+    create: yes
+    dest: /etc/apt/apt.conf
+    state: present
+    block: |
+      Acquire::http::proxy "{{ http_proxy }}";
+      Acquire::https::proxy "{{ https_proxy }}";
+
+- name: Install required packages
+  become: true
+  ansible.builtin.apt:
+    autoclean: yes
+    autoremove: yes
+    update_cache: yes
+    name:
+      - apt-transport-https
+      - aptitude
+      - ca-certificates
+      - curl
+    state: latest
+
+- name: Upgrade all packages
+  become: true
+  ansible.builtin.apt:
+    autoclean: yes
+    autoremove: yes
+    upgrade: dist
+    update_cache: yes
+
+- name: Install packages
+  when:
+    - apt_packages is defined
+  become: true
+  ansible.builtin.apt:
+    autoclean: yes
+    autoremove: yes
+    name: "{{ apt_packages }}"
+    state: latest
+
+- name: Set users
+  when:
+    - users is defined
+  become: true
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    shell: "{{ item.shell }}"
+    append: yes
+  loop: "{{ users }}"

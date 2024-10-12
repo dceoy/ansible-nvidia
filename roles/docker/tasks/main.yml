@@ -161,10 +161,10 @@
 
 - name: Add users to %docker
   when:
-    - docker_users is defined
+    - users is defined
   become: true
   ansible.builtin.user:
-    name: "{{ item }}"
+    name: "{{ item.name }}"
     groups: docker
     append: yes
-  with_items: "{{ docker_users }}"
+  with_items: "{{ users }}"

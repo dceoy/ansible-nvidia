@@ -1,4 +1,42 @@
 ---
 ansible_become_pass: sudo_pass
-docker_users:
-  - foo
+users:
+  - name: dockeruser
+    shell: /usr/bin/zsh
+deb_packages:
+  - apt-file
+  - apt-transport-https
+  - apt-utils
+  - aptitude
+  - bridge-utils
+  - build-essential
+  - bzip2
+  - ca-certificates
+  - colordiff
+  - curl
+  - dnsutils
+  - fd-find
+  - git
+  - gnome-terminal
+  - htop
+  - jq
+  - locales
+  - net-tools
+  - nkf
+  - p7zip-full
+  - pandoc
+  - pbzip2
+  - pigz
+  - qemu-user-static
+  - rename
+  - shellcheck
+  - software-properties-common
+  - systemd-timesyncd
+  - time
+  - tmux
+  - traceroute
+  - tree
+  - vim-gnome
+  - wget
+  - zip
+  - zsh
