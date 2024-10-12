@@ -1,0 +1,170 @@
+---
+- name: Check if Docker packages are installed
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+  check_mode: yes
+  register: docker_packages_installed
+
+- name: Install required packages
+  when:
+    - not docker_packages_installed.changed
+  become: true
+  ansible.builtin.apt:
+    autoclean: yes
+    autoremove: yes
+    update_cache: yes
+    name:
+      - ca-certificates
+      - curl
+    state: latest
+
+- name: Uninstall old versions of Docker
+  when:
+    - not docker_packages_installed.changed
+  become: true
+  ansible.builtin.apt:
+    autoremove: yes
+    name:
+      - docker.io
+      - docker-doc
+      - docker-compose
+      - docker-compose-v2
+      - podman-docker
+      - containerd
+      - runc
+    state: absent
+
+- name: Create keyrings directory
+  when:
+    - not docker_packages_installed.changed
+  become: true
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Docker GPG key
+  when:
+    - not docker_packages_installed.changed
+  become: true
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+
+- name: Add Docker repository
+  when:
+    - not docker_packages_installed.changed
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: Install Docker packages
+  become: true
+  ansible.builtin.apt:
+    autoclean: yes
+    autoremove: yes
+    update_cache: yes
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: latest
+  notify:
+    - Restart Docker
+
+- name: Check if NVIDIA Container Toolkit is installed
+  ansible.builtin.apt:
+    name:
+      - nvidia-container-toolkit
+    state: present
+  check_mode: yes
+  register: nvidia_container_toolkit_installed
+
+- name: Download NVIDIA GPG key
+  when:
+    - not nvidia_container_toolkit_installed.changed
+  become: true
+  ansible.builtin.get_url:
+    url: https://nvidia.github.io/libnvidia-container/gpgkey
+    dest: /tmp/nvidia-gpgkey.asc
+
+- name: Import NVIDIA GPG key
+  when:
+    - not nvidia_container_toolkit_installed.changed
+  become: true
+  ansible.builtin.gpg_key:
+    file: /tmp/nvidia-gpgkey.asc
+    dest: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    state: present
+
+- name: Download NVIDIA Container Toolkit repository file
+  when:
+    - not nvidia_container_toolkit_installed.changed
+  become: true
+  ansible.builtin.get_url:
+    url: https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
+    dest: /tmp/nvidia-container-toolkit.list
+
+- name: Modify and add NVIDIA Container Toolkit repository
+  when:
+    - not nvidia_container_toolkit_installed.changed
+    - item | regex_search('^deb https://')
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    line: "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://{{ item.split('https://')[1] }}"
+    create: yes
+    state: present
+  loop: "{{ lookup('file', '/tmp/nvidia-container-toolkit.list').split('\n') }}"
+
+- name: Clean up temporary files
+  when:
+    - not nvidia_container_toolkit_installed.changed
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/nvidia-gpgkey.asc
+    - /tmp/nvidia-container-toolkit.list
+
+- name: Install NVIDIA Container Toolkit
+  become: true
+  ansible.builtin.apt:
+    autoclean: yes
+    autoremove: yes
+    update_cache: yes
+    name:
+      - nvidia-container-toolkit
+    state: latest
+  notify:
+    - Restart Docker
+
+- name: Start and enable Docker
+  become: true
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    daemon_reload: yes
+    enabled: yes
+
+- name: Add users to %docker
+  when:
+    - docker_users is defined
+  become: true
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  with_items: "{{ docker_users }}"
