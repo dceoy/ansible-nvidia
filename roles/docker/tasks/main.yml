@@ -8,12 +8,12 @@
       - docker-buildx-plugin
       - docker-compose-plugin
     state: present
-  check_mode: yes
-  register: docker_packages_installed
+  ignore_errors: true
+  register: docker_packages_is_present
 
 - name: Install required packages
   when:
-    - not docker_packages_installed.changed
+    - docker_packages_is_present is failed
   become: true
   ansible.builtin.apt:
     autoclean: yes
@@ -26,7 +26,7 @@
 
 - name: Uninstall old versions of Docker
   when:
-    - not docker_packages_installed.changed
+    - docker_packages_is_present is failed
   become: true
   ansible.builtin.apt:
     autoremove: yes
@@ -42,7 +42,7 @@
 
 - name: Create keyrings directory
   when:
-    - not docker_packages_installed.changed
+    - docker_packages_is_present is failed
   become: true
   ansible.builtin.file:
     path: /etc/apt/keyrings
@@ -51,19 +51,25 @@
 
 - name: Download Docker GPG key
   when:
-    - not docker_packages_installed.changed
+    - docker_packages_is_present is failed
   become: true
   ansible.builtin.get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
     dest: /etc/apt/keyrings/docker.asc
     mode: '0644'
 
+- name: Print the architecture of the system
+  ansible.builtin.command:
+    cmd: dpkg --print-architecture
+  register: dpkg_print_architecture
+  changed_when: false
+
 - name: Add Docker repository
   when:
-    - not docker_packages_installed.changed
+    - docker_packages_is_present is failed
   become: true
   ansible.builtin.apt_repository:
-    repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    repo: "deb [arch={{ dpkg_print_architecture.stdout }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
     state: present
     filename: docker
 
@@ -88,55 +94,47 @@
     name:
       - nvidia-container-toolkit
     state: present
-  check_mode: yes
-  register: nvidia_container_toolkit_installed
+  ignore_errors: yes
+  register: nvidia_container_toolkit_is_present
 
 - name: Download NVIDIA GPG key
   when:
-    - not nvidia_container_toolkit_installed.changed
+    - nvidia_container_toolkit_is_present is failed
   become: true
   ansible.builtin.get_url:
     url: https://nvidia.github.io/libnvidia-container/gpgkey
-    dest: /tmp/nvidia-gpgkey.asc
-
-- name: Import NVIDIA GPG key
-  when:
-    - not nvidia_container_toolkit_installed.changed
-  become: true
-  ansible.builtin.gpg_key:
-    file: /tmp/nvidia-gpgkey.asc
-    dest: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-    state: present
+    dest: /usr/share/keyrings/nvidia-container-toolkit-keyring.asc
+    mode: '0644'
 
 - name: Download NVIDIA Container Toolkit repository file
   when:
-    - not nvidia_container_toolkit_installed.changed
+    - nvidia_container_toolkit_is_present is failed
   become: true
-  ansible.builtin.get_url:
+  ansible.builtin.uri:
     url: https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
-    dest: /tmp/nvidia-container-toolkit.list
+    return_content: yes
+  register: nvidia_container_toolkit_list
 
 - name: Modify and add NVIDIA Container Toolkit repository
   when:
-    - not nvidia_container_toolkit_installed.changed
+    - nvidia_container_toolkit_is_present is failed
     - item | regex_search('^deb https://')
   become: true
   ansible.builtin.lineinfile:
     path: /etc/apt/sources.list.d/nvidia-container-toolkit.list
-    line: "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://{{ item.split('https://')[1] }}"
+    line: "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.asc] https://{{ item.split('https://')[1] }}"
     create: yes
     state: present
-  loop: "{{ lookup('file', '/tmp/nvidia-container-toolkit.list').split('\n') }}"
+  loop: "{{ nvidia_container_toolkit_list.content.split('\n') }}"
 
 - name: Clean up temporary files
   when:
-    - not nvidia_container_toolkit_installed.changed
+    - nvidia_container_toolkit_is_present is failed
   become: true
   ansible.builtin.file:
     path: "{{ item }}"
     state: absent
   loop:
-    - /tmp/nvidia-gpgkey.asc
     - /tmp/nvidia-container-toolkit.list
 
 - name: Install NVIDIA Container Toolkit
