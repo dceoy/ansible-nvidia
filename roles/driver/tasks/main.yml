@@ -10,14 +10,6 @@
       - ca-certificates
     state: latest
 
-- name: Upgrade packages
-  become: true
-  ansible.builtin.apt:
-    autoclean: yes
-    autoremove: yes
-    upgrade: dist
-    update_cache: yes
-
 - name: Check NVIDIA driver
   ansible.builtin.command:
     cmd: nvidia-smi
@@ -30,7 +22,7 @@
     - nvidia_smi is failed
   become: true
   ansible.builtin.command:
-    cmd: ubuntu-drivers autoinstall
+    cmd: ubuntu-drivers install
   register: ubuntu_drivers_install
   changed_when:
     - "'All the available drivers are already installed.' not in ubuntu_drivers_install.stdout"

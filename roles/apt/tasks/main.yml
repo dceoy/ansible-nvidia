@@ -35,7 +35,6 @@
       - apt-transport-https
       - aptitude
       - ca-certificates
-      - curl
     state: latest
 
 - name: Upgrade all packages
@@ -46,14 +45,14 @@
     upgrade: dist
     update_cache: yes
 
-- name: Install packages
+- name: Install Debian packages
   when:
-    - apt_packages is defined
+    - deb_packages is defined
   become: true
   ansible.builtin.apt:
     autoclean: yes
     autoremove: yes
-    name: "{{ apt_packages }}"
+    name: "{{ deb_packages }}"
     state: latest
 
 - name: Set users
@@ -63,5 +62,4 @@
   ansible.builtin.user:
     name: "{{ item.name }}"
     shell: "{{ item.shell }}"
-    append: yes
   loop: "{{ users }}"

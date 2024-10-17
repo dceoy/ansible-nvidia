@@ -11,3 +11,4 @@
     - role: driver
     - role: cuda
     - role: docker
+    - role: metric

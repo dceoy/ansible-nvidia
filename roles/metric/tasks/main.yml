@@ -1,0 +1,11 @@
+---
+- name: Collect server info
+  become: true
+  ansible.builtin.script: collect_server_info.sh
+  register: collect_server_info
+
+- name: Save server info to a local file
+  local_action:
+    module: copy
+    content: "{{ collect_server_info.stdout }}"
+    dest: collect_server_info.{{ ansible_hostname }}.{{ ansible_date_time.date }}.log.txt

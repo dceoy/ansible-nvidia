@@ -1,5 +1,10 @@
 ---
-- name: Restart Docker
+- name: Configure the container runtime
+  become: true
+  ansible.builtin.command:
+    cmd: nvidia-ctk runtime configure --runtime=docker
+
+- name: Restart the Docker daemon
   become: true
   ansible.builtin.systemd:
     name: docker
